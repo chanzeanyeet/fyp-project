@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - Storefront</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    /* Customer Specific Styles */
+    .hero {
+      padding: 6rem 2rem;
+      text-align: center;
+      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.2), transparent 60%);
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .filters-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .filters-bar input, .filters-bar select {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-bottom: 4rem;
+    }
+
+    .product-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-image {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .product-info {
+      padding: 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-category {
+      font-size: 0.875rem;
+      color: var(--accent-start);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .product-title {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .product-price {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-heading);
+      margin-top: auto;
+      margin-bottom: 1rem;
+    }
+
+    /* Cart Drawer */
+    .cart-drawer {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: rgba(10, 15, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--glass-border);
+      z-index: 1000;
+      transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+    }
+
+    .cart-drawer.open {
+      right: 0;
+    }
+
+    .cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 1rem;
+    }
+
+    .close-cart {
+      background: none;
+      border: none;
+      color: var(--text-heading);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .cart-items {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .cart-item {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .cart-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .cart-footer {
+      border-top: 1px solid var(--glass-border);
+      padding-top: 2rem;
+      margin-top: auto;
+    }
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .cart-btn {
+      position: relative;
+    }
+    
+    .cart-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--color-danger);
+      color: white;
+      font-size: 0.75rem;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Checkout Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .checkout-modal {
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .token-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--color-success);
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: 1px solid var(--color-success);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container flex justify-between items-center">
+      <a href="../index.html" class="nav-brand">ElixirTrade</a>
+      <div class="nav-actions">
+        <div class="token-badge" id="navTokenBadge" title="Loyalty Tokens">
+          🪙 <span id="userTokenBalance">0</span>
+        </div>
+        <a href="orders.html" class="btn btn-outline">My Orders</a>
+        <button class="btn btn-primary cart-btn" id="openCartBtn">
+          Cart <span class="cart-badge" id="cartBadge">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container animate-fade-in">
+      <h1>Discover the Future</h1>
+      <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 600px; margin: 0 auto;">Premium cybernetic enhancements and high-end digital tech, delivered straight to your node.</p>
+    </div>
+  </header>
+
+  <main class="container animate-fade-in" style="animation-delay: 0.2s">
+    <div class="filters-bar">
+      <input type="text" id="searchInput" placeholder="Search products...">
+      <select id="categoryFilter">
+        <option value="all">All Categories</option>
+        <option value="Electronics">Electronics</option>
+        <option value="Accessories">Accessories</option>
+        <option value="Wearables">Wearables</option>
+        <option value="Home">Home</option>
+        <option value="Audio">Audio</option>
+        <option value="Gaming">Gaming</option>
+      </select>
+      <select id="sortFilter">
+        <option value="popular">Most Popular</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+      </select>
+    </div>
+
+    <div class="product-grid" id="productGrid">
+      <!-- Products will be injected here by JS -->
+    </div>
+  </main>
+
+  <!-- Cart Drawer -->
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <h2>Your Cart</h2>
+      <button class="close-cart" id="closeCartBtn">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <!-- Cart items injected here -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total:</span>
+        <span id="cartTotal">$0.00</span>
+      </div>
+      <button class="btn btn-primary" style="width: 100%" id="checkoutBtn">Proceed to Checkout</button>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div class="modal-overlay" id="checkoutModalOverlay">
+    <div class="glass-panel checkout-modal animate-fade-in">
+      <button class="close-cart" id="closeCheckoutBtn" style="position: absolute; top: 1rem; right: 1rem;">&times;</button>
+      <h2>Checkout</h2>
+      <p style="margin-bottom: 1.5rem; color: var(--text-muted)">Complete your order.</p>
+      
+      <form id="checkoutForm">
+        <div class="grid" style="gap: 1rem">
+          <div>
+            <label>Shipping Address</label>
+            <input type="text" id="shippingAddress" required placeholder="123 Neon Ave, Cyber City">
+          </div>
+          <div>
+            <label>Payment Method</label>
+            <select id="paymentMethod" required>
+              <option value="cash">Credit Card / Cash</option>
+              <option value="tokens">Loyalty Tokens</option>
+            </select>
+            <div id="tokenPaymentInfo" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted); display: none;">
+              Required Tokens: <strong id="requiredTokensText" style="color: var(--color-success)">0</strong>
+            </div>
+            <div id="cashEarningInfo" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+              You will earn: <strong id="earnTokensText" style="color: var(--color-success)">0</strong> tokens (5% back)
+            </div>
+          </div>
+          <div id="creditCardDetails">
+            <label>Credit Card Token</label>
+            <input type="text" id="ccToken" placeholder="XXXX-XXXX-XXXX-XXXX">
+          </div>
+          
+          <button type="submit" class="btn btn-accent mt-4">Confirm Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/customer.js"></script>
+</body>
+</html>

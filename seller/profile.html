@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - Seller Profile</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .profile-container {
+      max-width: 600px;
+      margin: 4rem auto;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary-start);
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container flex justify-between items-center">
+      <a href="../index.html" class="nav-brand" style="background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">ElixirTrade | Seller</a>
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-outline">Back to Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container profile-container animate-fade-in">
+    <div class="glass-panel">
+      <div class="profile-header">
+        <img src="" id="avatarImg" class="profile-avatar" alt="Avatar">
+        <div>
+          <h2 id="merchantNameDisplay">Merchant Profile</h2>
+          <p class="text-muted" id="merchantEmailDisplay"></p>
+        </div>
+      </div>
+
+      <form id="profileForm">
+        <div class="grid" style="gap: 1.5rem">
+          <div>
+            <label>Username (Store Name)</label>
+            <input type="text" id="pUsername" required>
+          </div>
+          <div>
+            <label>Email Address</label>
+            <input type="email" id="pEmail" required>
+          </div>
+          <div>
+            <label>Avatar URL</label>
+            <input type="url" id="pAvatar" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="../js/db.js"></script>
+  <script>
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      currentUser = window.db.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'seller') {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      document.getElementById('avatarImg').src = currentUser.avatar;
+      document.getElementById('merchantNameDisplay').textContent = currentUser.username;
+      document.getElementById('merchantEmailDisplay').textContent = currentUser.email;
+
+      document.getElementById('pUsername').value = currentUser.username;
+      document.getElementById('pEmail').value = currentUser.email;
+      document.getElementById('pAvatar').value = currentUser.avatar;
+    });
+
+    document.getElementById('profileForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      currentUser.username = document.getElementById('pUsername').value;
+      currentUser.email = document.getElementById('pEmail').value;
+      currentUser.avatar = document.getElementById('pAvatar').value;
+
+      window.db.updateUser(currentUser);
+      
+      alert('Profile updated successfully!');
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>

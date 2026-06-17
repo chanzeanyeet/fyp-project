@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - Product Details</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .product-detail-container {
+      margin-top: 4rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+    }
+
+    .gallery-main {
+      width: 100%;
+      height: 500px;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .detail-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .detail-category {
+      color: var(--accent-start);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .detail-title {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .detail-price {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 2rem;
+    }
+
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .quantity-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.05);
+      color: white;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .quantity-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    #qtyInput {
+      width: 60px;
+      text-align: center;
+      font-size: 1.25rem;
+      padding: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .product-detail-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container flex justify-between items-center">
+      <a href="../index.html" class="nav-brand">ElixirTrade</a>
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-outline">Back to Store</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container product-detail-container animate-fade-in" id="productContainer">
+    <!-- Injected by JS -->
+  </main>
+
+  <script src="../js/db.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // For prototype, just load a specific product or use URL params. Let's load ID 1.
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = parseInt(urlParams.get('id') || 1);
+      
+      const product = window.db.getProduct(productId);
+      
+      if(!product) {
+        document.getElementById('productContainer').innerHTML = '<h2>Product not found</h2>';
+        return;
+      }
+
+      document.getElementById('productContainer').innerHTML = `
+        <div>
+          <img src="${product.image}" class="gallery-main" alt="${product.name}">
+        </div>
+        <div class="detail-info">
+          <div class="detail-category">${product.category}</div>
+          <h1 class="detail-title">${product.name}</h1>
+          <p style="font-size: 1.125rem; color: var(--text-muted); margin-bottom: 2rem; line-height: 1.8">
+            ${product.description}<br><br>
+            Experience unparalleled fidelity with state-of-the-art engineering. Built for the modern cypherpunk and elite operative.
+          </p>
+          <div style="color: var(--color-warning); margin-bottom: 1.5rem; font-size: 1.25rem">
+            ★ ${product.rating} | ${product.stock > 0 ? product.stock + ' in stock' : 'Out of Stock'}
+          </div>
+          <div class="detail-price">$${product.price.toFixed(2)}</div>
+          
+          <div class="quantity-control">
+            <button class="quantity-btn" onclick="updateQty(-1)">-</button>
+            <input type="number" id="qtyInput" value="1" min="1" max="${product.stock}" readonly>
+            <button class="quantity-btn" onclick="updateQty(1)">+</button>
+          </div>
+
+          <button class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.125rem" onclick="buyNow()">
+            ${product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
+          </button>
+        </div>
+      `;
+
+      window.updateQty = function(change) {
+        const input = document.getElementById('qtyInput');
+        let val = parseInt(input.value) + change;
+        if(val >= 1 && val <= product.stock) {
+          input.value = val;
+        }
+      };
+
+      window.buyNow = function() {
+        if(product.stock <= 0) return;
+        const qty = parseInt(document.getElementById('qtyInput').value);
+        alert('Item added to cart! Navigate back to storefront to checkout.');
+        // Simplified flow: In reality we'd link to shared cart state across pages
+        window.location.href = 'index.html';
+      };
+    });
+  </script>
+</body>
+</html>

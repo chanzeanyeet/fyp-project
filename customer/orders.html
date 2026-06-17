@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - My Orders</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .orders-container {
+      max-width: 800px;
+      margin: 4rem auto;
+    }
+    
+    .order-card {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .order-id {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary-start);
+    }
+
+    .order-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background: rgba(245, 158, 11, 0.2); color: var(--color-warning); }
+    .status-shipped { background: rgba(6, 182, 212, 0.2); color: var(--accent-start); }
+    .status-delivered { background: rgba(16, 185, 129, 0.2); color: var(--color-success); }
+
+    .order-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .token-detail {
+      font-size: 0.875rem;
+      color: var(--color-success);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container flex justify-between items-center">
+      <a href="../index.html" class="nav-brand">ElixirTrade</a>
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-outline">Back to Store</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container orders-container animate-fade-in">
+    <h2 style="margin-bottom: 2rem; font-size: 2.5rem;">Transaction History</h2>
+    <div id="ordersList">
+      <!-- Orders injected by JS -->
+    </div>
+  </main>
+
+  <script src="../js/db.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const currentUser = window.db.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'customer') {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      const orders = window.db.getOrdersByCustomer(currentUser.id);
+      const container = document.getElementById('ordersList');
+
+      if (orders.length === 0) {
+        container.innerHTML = '<p class="text-muted">You have no past orders.</p>';
+        return;
+      }
+
+      // Sort by newest
+      orders.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+      orders.forEach(order => {
+        let statusClass = '';
+        if(order.status === 'pending') statusClass = 'status-pending';
+        if(order.status === 'shipped') statusClass = 'status-shipped';
+        if(order.status === 'delivered') statusClass = 'status-delivered';
+
+        let itemsHtml = '';
+        order.items.forEach(item => {
+          itemsHtml += `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem">
+              <span>${item.quantity}x ${item.name || 'Product'}</span>
+              <span>$${(item.price * item.quantity).toFixed(2)}</span>
+            </div>
+          `;
+        });
+
+        let paymentHtml = '';
+        if (order.paymentMethod === 'tokens') {
+          paymentHtml = `Paid with Tokens <br><span class="token-detail">- ${order.tokensSpent} Tokens</span>`;
+        } else {
+          paymentHtml = `Paid with Cash <br><span class="token-detail">+ ${order.tokensEarned} Tokens Earned</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'glass-panel order-card';
+        card.innerHTML = `
+          <div class="order-header">
+            <div>
+              <div class="order-id">${order.id}</div>
+              <div style="font-size: 0.875rem; color: var(--text-muted)">${new Date(order.date).toLocaleString()}</div>
+            </div>
+            <div>
+              <span class="order-status ${statusClass}">${order.status}</span>
+            </div>
+          </div>
+          <div class="order-items">
+            ${itemsHtml}
+          </div>
+          <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--glass-border); display: flex; justify-content: space-between; align-items: flex-end;">
+            <div style="font-size: 0.875rem; color: var(--text-muted);">
+              ${paymentHtml}
+            </div>
+            <div style="text-align: right; font-size: 1.25rem; font-weight: bold;">
+              Total: $${order.totalAmount.toFixed(2)}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+  </script>
+</body>
+</html>

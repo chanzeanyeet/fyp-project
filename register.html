@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - Register</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 450px;
+    }
+    .text-center {
+      text-align: center;
+    }
+    .error-msg {
+      color: var(--color-danger);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-container animate-fade-in">
+    <div class="glass-panel">
+      <h2 class="text-center" style="font-size: 2.5rem; margin-bottom: 0.5rem; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Join ElixirTrade</h2>
+      <p class="text-center" style="color: var(--text-muted); margin-bottom: 2rem;">Create your digital commerce account</p>
+
+      <div id="errorMsg" class="error-msg">Email already exists.</div>
+
+      <form id="registerForm">
+        <div class="grid" style="gap: 1.5rem;">
+          <div>
+            <label>Username</label>
+            <input type="text" id="username" required placeholder="CyberShopper">
+          </div>
+          <div>
+            <label>Email Address</label>
+            <input type="email" id="email" required placeholder="user@example.com">
+          </div>
+          <div>
+            <label>Password</label>
+            <input type="password" id="password" required placeholder="••••••••">
+          </div>
+          <div>
+            <label>Account Type</label>
+            <select id="role">
+              <option value="customer">Customer (Buy Products)</option>
+              <option value="seller">Merchant (Sell Products)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-accent" style="width: 100%">Create Account</button>
+        </div>
+      </form>
+
+      <div class="text-center" style="margin-top: 2rem; font-size: 0.875rem; color: var(--text-muted)">
+        Already have an account? <a href="login.html">Log in</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // If already logged in, redirect
+      const user = window.db.getCurrentUser();
+      if(user) {
+        window.location.href = 'index.html';
+      }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const pass = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+
+      const result = window.db.register(username, email, pass, role);
+      if (result.success) {
+        // Automatically login
+        window.db.login(email, pass);
+        window.location.href = 'index.html';
+      } else {
+        const errorEl = document.getElementById('errorMsg');
+        errorEl.textContent = result.message;
+        errorEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
