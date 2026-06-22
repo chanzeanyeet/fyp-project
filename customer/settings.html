@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - Account Settings</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .settings-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .settings-section {
+      margin-bottom: 3rem;
+    }
+
+    .settings-section h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .avatar-upload {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .avatar-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid var(--primary-start);
+      object-fit: cover;
+    }
+
+    .theme-options {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .theme-option {
+      width: 100px;
+      height: 60px;
+      border-radius: 8px;
+      border: 2px solid var(--glass-border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .theme-option.active {
+      border-color: var(--primary-start);
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .theme-dark { background: var(--bg-core); color: white; }
+    .theme-light { background: #f8fafc; color: #0f172a; }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    <aside class="sidebar" id="sideTab">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-brand">ElixirTrade</a>
+      </div>
+      <ul class="sidebar-nav">
+        <li><a href="index.html"><span class="nav-icon">🏪</span> Shop</a></li>
+        <li><a href="wallet.html"><span class="nav-icon">💰</span> Wallet</a></li>
+        <li><a href="settings.html" class="active"><span class="nav-icon">⚙️</span> Setting</a></li>
+        <li><a href="orders.html"><span class="nav-icon">📦</span> History</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile-mini" id="userProfileMini">
+          <img src="" alt="Avatar" id="userAvatar">
+          <div>
+            <div class="user-name" id="userName">User</div>
+            <div class="user-role" id="userRole">Customer</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="settings-container animate-fade-in">
+        <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Account Settings</h1>
+
+        <div class="glass-panel settings-section">
+          <h3>Profile Information</h3>
+          <div class="avatar-upload">
+            <img src="../assets/avatars/user-default.png" alt="Profile" class="avatar-preview" id="settingsAvatar">
+            <div>
+              <button class="btn btn-outline" style="margin-bottom: 0.5rem">Change Avatar</button>
+              <div style="font-size: 0.8rem; color: var(--text-muted)">JPG, GIF or PNG. Max size of 800K</div>
+            </div>
+          </div>
+
+          <form id="profileForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="settingUsername" value="">
+              </div>
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="settingEmail" value="">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Shipping Address</label>
+              <input type="text" id="settingAddress" value="123 Cyber Ave, Sector 7">
+            </div>
+            <button type="submit" class="btn btn-primary" onclick="event.preventDefault(); alert('Profile updated successfully!')">Save Changes</button>
+          </form>
+        </div>
+
+        <div class="glass-panel settings-section">
+          <h3>Preferences</h3>
+          <div class="form-group">
+            <label style="margin-bottom: 1rem;">Interface Theme</label>
+            <div class="theme-options">
+              <div class="theme-option theme-dark active">Dark</div>
+              <div class="theme-option theme-light">Light</div>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-top: 2rem;">
+            <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+              <input type="checkbox" checked style="width: auto;">
+              Receive promotional emails and product updates
+            </label>
+          </div>
+        </div>
+
+        <div class="glass-panel settings-section" style="border-color: rgba(244, 63, 94, 0.3);">
+          <h3 style="color: var(--color-danger)">Danger Zone</h3>
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Once you delete your account, there is no going back. Please be certain.</p>
+          <button class="btn btn-outline" style="color: var(--color-danger); border-color: var(--color-danger)">Delete Account</button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const currentUser = window.db.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'customer') {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      // Populate user profile in sidebar and settings
+      document.getElementById('userName').textContent = currentUser.username;
+      document.getElementById('userAvatar').src = currentUser.avatar || '';
+      
+      document.getElementById('settingsAvatar').src = currentUser.avatar || '';
+      document.getElementById('settingUsername').value = currentUser.username;
+      document.getElementById('settingEmail').value = currentUser.username + '@elixirtrade.com';
+    });
+  </script>
+</body>
+</html>

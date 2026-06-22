@@ -91,22 +91,43 @@
 </head>
 <body>
 
-  <nav>
-    <div class="container flex justify-between items-center">
-      <a href="../index.html" class="nav-brand">ElixirTrade</a>
-      <div class="nav-actions">
-        <a href="index.html" class="btn btn-outline">Back to Store</a>
+  <div class="app-layout">
+    <aside class="sidebar" id="sideTab">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-brand">ElixirTrade</a>
       </div>
-    </div>
-  </nav>
+      <ul class="sidebar-nav">
+        <li><a href="index.html"><span class="nav-icon">🏪</span> Shop</a></li>
+        <li><a href="wallet.html"><span class="nav-icon">💰</span> Wallet</a></li>
+        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Setting</a></li>
+        <li><a href="orders.html"><span class="nav-icon">📦</span> History</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile-mini" id="userProfileMini">
+          <img src="" alt="Avatar" id="userAvatar">
+          <div>
+            <div class="user-name" id="userName">User</div>
+            <div class="user-role" id="userRole">Customer</div>
+          </div>
+        </div>
+      </div>
+    </aside>
 
-  <main class="container product-detail-container animate-fade-in" id="productContainer">
-    <!-- Injected by JS -->
-  </main>
+    <main class="main-content product-detail-container animate-fade-in" id="productContainer">
+      <!-- Injected by JS -->
+    </main>
+  </div>
 
   <script src="../js/db.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Setup Sidebar profile
+      const currentUser = window.db.getCurrentUser();
+      if (currentUser && currentUser.role === 'customer') {
+        document.getElementById('userName').textContent = currentUser.username;
+        document.getElementById('userAvatar').src = currentUser.avatar || '';
+      }
+
       // For prototype, just load a specific product or use URL params. Let's load ID 1.
       const urlParams = new URLSearchParams(window.location.search);
       const productId = parseInt(urlParams.get('id') || 1);

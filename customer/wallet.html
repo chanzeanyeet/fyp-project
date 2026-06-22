@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElixirTrade - My Wallet</title>
+  <meta name="description" content="View your ElixirTrade wallet balance, token history, and spending analytics.">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    /* ========== Balance Card ========== */
+    .balance-card {
+      position: relative;
+      padding: 2.5rem;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.15));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      margin-bottom: 2rem;
+    }
+
+    .balance-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent 60%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .balance-card::after {
+      content: '';
+      position: absolute;
+      bottom: -40%;
+      left: -10%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15), transparent 60%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .balance-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .balance-amount {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--text-heading);
+      margin-bottom: 0.25rem;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .balance-amount .token-icon {
+      font-size: 2.5rem;
+    }
+
+    .balance-usd {
+      font-size: 1.1rem;
+      color: var(--color-success);
+      position: relative;
+      z-index: 1;
+    }
+
+    .balance-meta {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .balance-meta-item {
+      padding: 0.75rem 1.25rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .balance-meta-item .meta-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .balance-meta-item .meta-value {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .meta-value.earned { color: var(--color-success); }
+    .meta-value.spent { color: var(--color-danger); }
+
+    /* ========== Stats Grid ========== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      padding: 1.75rem;
+      border-radius: 16px;
+    }
+
+    .stat-card h3 {
+      font-size: 1rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ========== Donut Chart ========== */
+    .donut-chart-container {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .donut-chart {
+      width: 140px;
+      height: 140px;
+      flex-shrink: 0;
+    }
+
+    .donut-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-value {
+      margin-left: auto;
+      font-weight: 600;
+      color: var(--text-heading);
+    }
+
+    /* ========== Bar Chart ========== */
+    .bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .bar-label {
+      width: 100px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 28px;
+      background: rgba(10, 15, 30, 0.5);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+      transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+      min-width: 0;
+    }
+
+    /* ========== Payment Method ========== */
+    .payment-split {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .payment-block {
+      flex: 1;
+      padding: 1rem;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .payment-block.cash-block {
+      background: rgba(6, 182, 212, 0.08);
+      border-color: rgba(6, 182, 212, 0.2);
+    }
+
+    .payment-block.token-block {
+      background: rgba(168, 85, 247, 0.08);
+      border-color: rgba(168, 85, 247, 0.2);
+    }
+
+    .payment-block .pay-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .payment-block .pay-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .payment-block .pay-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .payment-block .pay-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* ========== Recent Transactions ========== */
+    .transactions-section {
+      margin-top: 2rem;
+    }
+
+    .transactions-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .transaction-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .transaction-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s ease;
+    }
+
+    .transaction-item:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      background: rgba(22, 28, 45, 0.85);
+    }
+
+    .tx-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .tx-icon.tx-earn {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success);
+    }
+
+    .tx-icon.tx-spend {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--color-danger);
+    }
+
+    .tx-icon.tx-purchase {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-start);
+    }
+
+    .tx-details {
+      flex: 1;
+    }
+
+    .tx-title {
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-bottom: 0.125rem;
+      font-size: 0.925rem;
+    }
+
+    .tx-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .tx-amount {
+      text-align: right;
+    }
+
+    .tx-amount .amount-value {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .tx-amount .amount-value.positive { color: var(--color-success); }
+    .tx-amount .amount-value.negative { color: var(--color-danger); }
+
+    .tx-amount .amount-usd {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* ========== Empty State ========== */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* ========== Pulse animation for balance ========== */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); }
+      50% { box-shadow: 0 0 35px rgba(99, 102, 241, 0.3); }
+    }
+
+    .balance-card {
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+
+    /* ========== Stagger animations ========== */
+    .animate-stagger > * {
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    .animate-stagger > *:nth-child(1) { animation-delay: 0.1s; }
+    .animate-stagger > *:nth-child(2) { animation-delay: 0.2s; }
+    .animate-stagger > *:nth-child(3) { animation-delay: 0.3s; }
+    .animate-stagger > *:nth-child(4) { animation-delay: 0.35s; }
+    .animate-stagger > *:nth-child(5) { animation-delay: 0.4s; }
+    .animate-stagger > *:nth-child(6) { animation-delay: 0.45s; }
+    .animate-stagger > *:nth-child(7) { animation-delay: 0.5s; }
+    .animate-stagger > *:nth-child(8) { animation-delay: 0.55s; }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- ========== Side Tab ========== -->
+    <aside class="sidebar" id="sideTab">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-brand">ElixirTrade</a>
+      </div>
+      <ul class="sidebar-nav">
+        <li><a href="index.html"><span class="nav-icon">🏪</span> Shop</a></li>
+        <li><a href="wallet.html" class="active"><span class="nav-icon">💰</span> Wallet</a></li>
+        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Setting</a></li>
+        <li><a href="orders.html"><span class="nav-icon">📦</span> History</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile-mini" id="userProfileMini">
+          <img src="" alt="Avatar" id="userAvatar">
+          <div>
+            <div class="user-name" id="userName">User</div>
+            <div class="user-role" id="userRole">Customer</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========== Main Content ========== -->
+    <main class="main-content">
+      <div class="animate-stagger">
+        <div>
+          <h1>My Wallet</h1>
+          <p class="wallet-subtitle">Track your token balance, spending habits, and transaction history.</p>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="balance-card" id="balanceCard">
+          <div class="balance-label">Available Token Balance</div>
+          <div class="balance-amount">
+            <span class="token-icon">🪙</span>
+            <span id="tokenBalance">0</span>
+          </div>
+          <div class="balance-usd">≈ $<span id="usdEquivalent">0.00</span> USD value</div>
+          <div class="balance-meta">
+            <div class="balance-meta-item">
+              <div class="meta-label">Total Earned</div>
+              <div class="meta-value earned" id="totalEarned">+0</div>
+            </div>
+            <div class="balance-meta-item">
+              <div class="meta-label">Total Spent</div>
+              <div class="meta-value spent" id="totalSpent">-0</div>
+            </div>
+            <div class="balance-meta-item">
+              <div class="meta-label">Total Orders</div>
+              <div class="meta-value" id="totalOrders">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <!-- Spending by Category -->
+          <div class="glass-panel stat-card">
+            <h3>📊 Spending by Category</h3>
+            <div class="donut-chart-container">
+              <svg class="donut-chart" viewBox="0 0 42 42" id="donutChart">
+                <circle cx="21" cy="21" r="15.91549430918954" fill="transparent"
+                  stroke="rgba(255,255,255,0.05)" stroke-width="4"/>
+                <!-- Segments injected by JS -->
+              </svg>
+              <div class="donut-legend" id="donutLegend">
+                <!-- Legend items injected by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method Breakdown -->
+          <div class="glass-panel stat-card">
+            <h3>💳 Payment Breakdown</h3>
+            <div class="payment-split" id="paymentSplit">
+              <div class="payment-block cash-block">
+                <div class="pay-icon">💵</div>
+                <div class="pay-label">Cash / Card</div>
+                <div class="pay-value" id="cashTotal">$0.00</div>
+                <div class="pay-count" id="cashCount">0 orders</div>
+              </div>
+              <div class="payment-block token-block">
+                <div class="pay-icon">🪙</div>
+                <div class="pay-label">Token Payments</div>
+                <div class="pay-value" id="tokenTotal">$0.00</div>
+                <div class="pay-count" id="tokenCount">0 orders</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Spending Bar Chart -->
+        <div class="glass-panel stat-card" style="margin-bottom: 2rem;">
+          <h3>📈 Monthly Spending</h3>
+          <div class="bar-chart" id="barChart">
+            <!-- Bars injected by JS -->
+          </div>
+        </div>
+
+        <!-- Recent Token Transactions -->
+        <div class="transactions-section">
+          <h2>🔄 Token Activity</h2>
+          <div class="transaction-list animate-stagger" id="transactionList">
+            <!-- Transactions injected by JS -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/db.js"></script>
+  <script>
+    // Palette for category donut chart
+    const CHART_COLORS = [
+      '#6366f1', '#a855f7', '#06b6d4', '#10b981',
+      '#f59e0b', '#f43f5e', '#ec4899', '#8b5cf6'
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Access control
+      const currentUser = window.db.getCurrentUser();
+      if (!currentUser || currentUser.role !== 'customer') {
+        alert('Access Denied. Please log in as a Customer.');
+        window.location.href = '../login.html';
+        return;
+      }
+
+      // Populate user profile in sidebar
+      document.getElementById('userName').textContent = currentUser.username;
+      document.getElementById('userRole').textContent = currentUser.role;
+      document.getElementById('userAvatar').src = currentUser.avatar || '';
+
+      // Fetch orders
+      const orders = window.db.getOrdersByCustomer(currentUser.id);
+      const products = window.db.getProducts();
+
+      // ===== Balance Card =====
+      const tokenBalance = currentUser.loyaltyTokens || 0;
+      document.getElementById('tokenBalance').textContent = tokenBalance.toLocaleString();
+      document.getElementById('usdEquivalent').textContent = (tokenBalance / 100).toFixed(2);
+
+      let totalEarned = 0;
+      let totalSpent = 0;
+      orders.forEach(o => {
+        totalEarned += (o.tokensEarned || 0);
+        totalSpent += (o.tokensSpent || 0);
+      });
+      document.getElementById('totalEarned').textContent = '+' + totalEarned.toLocaleString();
+      document.getElementById('totalSpent').textContent = '-' + totalSpent.toLocaleString();
+      document.getElementById('totalOrders').textContent = orders.length;
+
+      // ===== Spending by Category =====
+      const categorySpend = {};
+      orders.forEach(order => {
+        order.items.forEach(item => {
+          const product = products.find(p => p.id === item.productId);
+          const category = product ? product.category : 'Other';
+          const amount = item.price * item.quantity;
+          categorySpend[category] = (categorySpend[category] || 0) + amount;
+        });
+      });
+
+      const totalCategorySpend = Object.values(categorySpend).reduce((s, v) => s + v, 0);
+      const sortedCategories = Object.entries(categorySpend).sort((a, b) => b[1] - a[1]);
+
+      if (sortedCategories.length > 0) {
+        renderDonutChart(sortedCategories, totalCategorySpend);
+      } else {
+        document.getElementById('donutChart').parentElement.innerHTML =
+          '<div class="empty-state"><div class="empty-icon">📊</div><p>No spending data yet</p></div>';
+      }
+
+      // ===== Payment Breakdown =====
+      let cashTotal = 0, tokenPayTotal = 0, cashCount = 0, tokenPayCount = 0;
+      orders.forEach(o => {
+        if (o.paymentMethod === 'tokens') {
+          tokenPayTotal += o.totalAmount;
+          tokenPayCount++;
+        } else {
+          cashTotal += o.totalAmount;
+          cashCount++;
+        }
+      });
+      document.getElementById('cashTotal').textContent = '$' + cashTotal.toFixed(2);
+      document.getElementById('cashCount').textContent = cashCount + ' order' + (cashCount !== 1 ? 's' : '');
+      document.getElementById('tokenTotal').textContent = '$' + tokenPayTotal.toFixed(2);
+      document.getElementById('tokenCount').textContent = tokenPayCount + ' order' + (tokenPayCount !== 1 ? 's' : '');
+
+      // ===== Monthly Spending Bar Chart =====
+      renderMonthlyChart(orders);
+
+      // ===== Token Activity / Transactions =====
+      renderTransactions(orders);
+    });
+
+    // ===== Donut Chart via SVG =====
+    function renderDonutChart(categories, total) {
+      const svg = document.getElementById('donutChart');
+      const legend = document.getElementById('donutLegend');
+      const radius = 15.91549430918954;
+      const circumference = 2 * Math.PI * radius;
+
+      // Clear existing dynamic segments
+      const existingSegments = svg.querySelectorAll('.donut-segment');
+      existingSegments.forEach(s => s.remove());
+
+      let offset = 0;
+
+      categories.forEach(([cat, amount], i) => {
+        const pct = amount / total;
+        const segmentLength = pct * circumference;
+        const gapLength = circumference - segmentLength;
+        const color = CHART_COLORS[i % CHART_COLORS.length];
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.classList.add('donut-segment');
+        circle.setAttribute('cx', '21');
+        circle.setAttribute('cy', '21');
+        circle.setAttribute('r', String(radius));
+        circle.setAttribute('fill', 'transparent');
+        circle.setAttribute('stroke', color);
+        circle.setAttribute('stroke-width', '4');
+        circle.setAttribute('stroke-dasharray', `${segmentLength} ${gapLength}`);
+        circle.setAttribute('stroke-dashoffset', String(-offset));
+        circle.setAttribute('stroke-linecap', 'round');
+        circle.style.transition = 'stroke-dasharray 1s ease, stroke-dashoffset 1s ease';
+
+        svg.appendChild(circle);
+        offset += segmentLength;
+
+        // Legend
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+          <span class="legend-dot" style="background: ${color}"></span>
+          <span>${cat}</span>
+          <span class="legend-value">$${amount.toFixed(2)}</span>
+        `;
+        legend.appendChild(item);
+      });
+
+      // Add center text
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', '21');
+      text.setAttribute('y', '21');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'central');
+      text.setAttribute('fill', '#ffffff');
+      text.setAttribute('font-size', '4');
+      text.setAttribute('font-weight', '700');
+      text.setAttribute('font-family', 'Outfit, sans-serif');
+      text.textContent = '$' + total.toFixed(0);
+      svg.appendChild(text);
+    }
+
+    // ===== Monthly Spending Bar Chart =====
+    function renderMonthlyChart(orders) {
+      const container = document.getElementById('barChart');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      // Group by month (last 6 months)
+      const now = new Date();
+      const monthlyData = {};
+
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        monthlyData[key] = {
+          label: monthNames[d.getMonth()] + ' ' + d.getFullYear(),
+          amount: 0
+        };
+      }
+
+      orders.forEach(order => {
+        const d = new Date(order.date);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (monthlyData[key]) {
+          monthlyData[key].amount += order.totalAmount;
+        }
+      });
+
+      const dataArr = Object.values(monthlyData);
+      const maxAmount = Math.max(...dataArr.map(d => d.amount), 1);
+
+      if (dataArr.every(d => d.amount === 0)) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><p>No spending data for recent months</p></div>';
+        return;
+      }
+
+      dataArr.forEach((d, idx) => {
+        const pct = (d.amount / maxAmount) * 100;
+        const colorIdx = idx % CHART_COLORS.length;
+
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <span class="bar-label">${d.label}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: 0; background: linear-gradient(90deg, ${CHART_COLORS[colorIdx]}, ${CHART_COLORS[(colorIdx + 1) % CHART_COLORS.length]});">
+              ${d.amount > 0 ? '$' + d.amount.toFixed(0) : ''}
+            </div>
+          </div>
+        `;
+        container.appendChild(row);
+
+        // Animate bar width
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            row.querySelector('.bar-fill').style.width = Math.max(pct, d.amount > 0 ? 8 : 0) + '%';
+          }, 100 + idx * 150);
+        });
+      });
+    }
+
+    // ===== Transaction List =====
+    function renderTransactions(orders) {
+      const container = document.getElementById('transactionList');
+
+      if (orders.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔄</div><p>No transactions yet. Start shopping to earn tokens!</p></div>';
+        return;
+      }
+
+      // Sort by newest first
+      const sorted = [...orders].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      sorted.forEach(order => {
+        // Each order can generate up to 2 transaction entries:
+        // 1. The purchase itself
+        // 2. Token earn/spend event
+
+        // Purchase transaction
+        const purchaseTx = document.createElement('div');
+        purchaseTx.className = 'transaction-item';
+        purchaseTx.innerHTML = `
+          <div class="tx-icon tx-purchase">🛒</div>
+          <div class="tx-details">
+            <div class="tx-title">Order ${order.id}</div>
+            <div class="tx-date">${new Date(order.date).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            })} · ${order.items.length} item${order.items.length > 1 ? 's' : ''}</div>
+          </div>
+          <div class="tx-amount">
+            <div class="amount-value negative">-$${order.totalAmount.toFixed(2)}</div>
+            <div class="amount-usd">via ${order.paymentMethod === 'tokens' ? 'Tokens' : 'Cash'}</div>
+          </div>
+        `;
+        container.appendChild(purchaseTx);
+
+        // Token activity
+        if (order.paymentMethod === 'tokens' && order.tokensSpent > 0) {
+          const tokenTx = document.createElement('div');
+          tokenTx.className = 'transaction-item';
+          tokenTx.innerHTML = `
+            <div class="tx-icon tx-spend">🔻</div>
+            <div class="tx-details">
+              <div class="tx-title">Tokens Redeemed for ${order.id}</div>
+              <div class="tx-date">${new Date(order.date).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+              })}</div>
+            </div>
+            <div class="tx-amount">
+              <div class="amount-value negative">-${order.tokensSpent.toLocaleString()} 🪙</div>
+              <div class="amount-usd">≈ $${(order.tokensSpent / 100).toFixed(2)}</div>
+            </div>
+          `;
+          container.appendChild(tokenTx);
+        } else if (order.tokensEarned > 0) {
+          const tokenTx = document.createElement('div');
+          tokenTx.className = 'transaction-item';
+          tokenTx.innerHTML = `
+            <div class="tx-icon tx-earn">🔺</div>
+            <div class="tx-details">
+              <div class="tx-title">Tokens Earned from ${order.id}</div>
+              <div class="tx-date">${new Date(order.date).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+              })}</div>
+            </div>
+            <div class="tx-amount">
+              <div class="amount-value positive">+${order.tokensEarned.toLocaleString()} 🪙</div>
+              <div class="amount-usd">≈ $${(order.tokensEarned / 100).toFixed(2)}</div>
+            </div>
+          `;
+          container.appendChild(tokenTx);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

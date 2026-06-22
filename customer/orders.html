@@ -55,23 +55,35 @@
     }
   </style>
 </head>
-<body>
-
-  <nav>
-    <div class="container flex justify-between items-center">
-      <a href="../index.html" class="nav-brand">ElixirTrade</a>
-      <div class="nav-actions">
-        <a href="index.html" class="btn btn-outline">Back to Store</a>
+  <div class="app-layout">
+    <aside class="sidebar" id="sideTab">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-brand">ElixirTrade</a>
       </div>
-    </div>
-  </nav>
+      <ul class="sidebar-nav">
+        <li><a href="index.html"><span class="nav-icon">🏪</span> Shop</a></li>
+        <li><a href="wallet.html"><span class="nav-icon">💰</span> Wallet</a></li>
+        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Setting</a></li>
+        <li><a href="orders.html" class="active"><span class="nav-icon">📦</span> History</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-profile-mini" id="userProfileMini">
+          <img src="" alt="Avatar" id="userAvatar">
+          <div>
+            <div class="user-name" id="userName">User</div>
+            <div class="user-role" id="userRole">Customer</div>
+          </div>
+        </div>
+      </div>
+    </aside>
 
-  <main class="container orders-container animate-fade-in">
-    <h2 style="margin-bottom: 2rem; font-size: 2.5rem;">Transaction History</h2>
-    <div id="ordersList">
-      <!-- Orders injected by JS -->
-    </div>
-  </main>
+    <main class="main-content orders-container animate-fade-in">
+      <h2 style="margin-bottom: 2rem; font-size: 2.5rem;">Transaction History</h2>
+      <div id="ordersList">
+        <!-- Orders injected by JS -->
+      </div>
+    </main>
+  </div>
 
   <script src="../js/db.js"></script>
   <script>
@@ -81,6 +93,10 @@
         window.location.href = '../login.html';
         return;
       }
+
+      // Populate user profile in sidebar
+      document.getElementById('userName').textContent = currentUser.username;
+      document.getElementById('userAvatar').src = currentUser.avatar || '';
 
       const orders = window.db.getOrdersByCustomer(currentUser.id);
       const container = document.getElementById('ordersList');
